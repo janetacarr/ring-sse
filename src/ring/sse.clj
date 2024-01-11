@@ -103,8 +103,7 @@
         response-channel (async/chan (if (fn? bufferfn-or-n) (bufferfn-or-n) bufferfn-or-n))
         response         (-> (ring-response/response response-channel)
                              (ring-response/content-type "text/event-stream") ;; TODO: content negotiation? "text/event-stream+json"?
-                             (ring-response/charset "UTF-8")
-                             (ring-response/header "Connection" "close")
+                             (ring-response/header "Connection" "keep-alive")
                              (ring-response/header "Cache-Control" "no-cache"))
         ;; TODO: re-create CORS support as per original: (update-in [:headers] merge (:cors-headers context))
         event-channel    (async/chan (if (fn? bufferfn-or-n) (bufferfn-or-n) bufferfn-or-n))

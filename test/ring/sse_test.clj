@@ -21,7 +21,7 @@
     (is (= 200 status) "A successful status code is sent to the client.")
     (is (= "text/event-stream; charset=UTF-8" content-type)
         "The mime type and character encoding are set with the servlet setContentType method")
-    (is (= "close" connection) "The client is instructed to close the connection.")
+    (is (= "keep-alive" connection) "The client is instructed to close the connection.")
     (is (= "no-cache" cache-control) "The client is instructed not to cache the event stream")
     #_(is (= "http://foo.com:8080" allow-origin)
           "The origin is allowed")))
