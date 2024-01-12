@@ -11,8 +11,7 @@
   clojure.core.async.impl.channels.ManyToManyChannel
   (write-body-to-stream [ch response ^java.io.OutputStream output-stream]
     (async/thread
-      (with-open [os  output-stream
-                  out (io/writer os)]
+      (with-open [out (io/writer output-stream)]
         (try
           (loop []
             (if-some [^String msg (async/<!! ch)]
@@ -20,6 +19,9 @@
                   (.flush out)
                   (recur))
               :done))
+          (catch org.eclipse.jetty.io.EofException eof
+            (prn {:event "EOF: likely disconnect / broken pipe"})
+            :error)
           (catch Exception e
             (prn {:event "error while writing from channel to output-stream" :exception e :ch ch})
             :error)
@@ -35,24 +37,14 @@
   ([name data]
    (mk-data name data nil))
   ([name data id]
-   (let [sb (StringBuilder.)]
-     (when name
-       (.append sb EVENT_FIELD)
-       (.append sb name)
-       (.append sb CRLF))
-
-     (doseq [part (string/split data #"\r?\n")]
-       (.append sb DATA_FIELD)
-       (.append sb part)
-       (.append sb CRLF))
-
-     (when (not-empty id)
-       (.append sb ID_FIELD)
-       (.append sb id)
-       (.append sb CRLF))
-
-     (.append sb CRLF)
-     (str sb))))
+   (apply str
+          (cond-> []
+            name (conj EVENT_FIELD name CRLF)
+            (not (empty? data)) (into (vec (flatten [DATA_FIELD
+                                                     (string/split data #"\r?\n")
+                                                     CRLF])))
+            (not-empty id) (conj ID_FIELD id CRLF)
+            true (conj CRLF)))))
 
 (defn- start-dispatch-loop
   "Kicks off the loop that transfers data provided by the application
@@ -118,14 +110,7 @@
                                  :heartbeat-delay  heartbeat-delay
                                  :raise            raise}
                                 (when on-client-disconnect
-                                  (if (== 1 (-> on-client-disconnect
-                                                class
-                                                .getDeclaredMethods
-                                                first
-                                                .getParameterTypes
-                                                alength))
-                                    {:on-client-disconnect #(on-client-disconnect response)}
-                                    {:on-client-disconnect #(on-client-disconnect response sr-fn-res-chan)}))))))
+                                  {:on-client-disconnect #(on-client-disconnect response)})))))
 
 (defn event-channel-handler
   "Returns a Ring async handler which will start a Server Sent Event
