@@ -19,6 +19,8 @@
      [:url "https://mit-license.org/"]]]
    [:developers
     [:developer
+     [:name "Bobby Calderwood"]]
+    [:developer
      [:name "Janet A. Carr"]]]
    [:scm
     [:url "https://github.com/janetacarr/ring-sse"]
